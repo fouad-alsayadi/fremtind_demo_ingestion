@@ -1,0 +1,53 @@
+# A job running SQL queries on a SQL warehouse
+resources:
+  jobs:
+    fremtind_demo_ingestion_sql_job:
+      name: fremtind_demo_ingestion_sql_job
+
+      schedule:
+        quartz_cron_expression: 0 0 1 * * ? # every day at 1am
+        timezone_id: UTC
+
+      email_notifications:
+        on_failure:
+          - fouad.alsayadi@databricks.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: bundle_target
+          default: ${bundle.target}
+
+      tasks:
+        - task_key: create_database
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/create_database.sql
+
+        - task_key: bronze_customer
+          depends_on:
+            - task_key: create_database
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/bronze_customer.sql
+
+        - task_key: bronze_order
+          depends_on:
+            - task_key: create_database
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/bronze_order.sql
+
+        - task_key: bronze_line_item
+          depends_on:
+            - task_key: create_database
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/bronze_line_item.sql
+
